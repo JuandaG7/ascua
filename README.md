@@ -1,36 +1,29 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Brasa
 
-## Getting Started
+App personal para recuperar la atención y la energía, un poco cada día. Diseño en [DESIGN.md](DESIGN.md).
 
-First, run the development server:
+## Pantallas
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Inicio**: check-in de energía, reto del día según tu nivel y energía, y tu plan.
+- **Modo foco**: temporizador inmersivo, "Me distraje" / "Terminé" y "¿te ayudó?".
+- **Biblioteca**: recomendaciones por nivel y tu plan.
+- **Chat**: pregunta por libros, pelis o música; responde según tu nivel e historial (Claude).
+- **Voz**: diario de voz para vaciar la cabeza. Solo se guarda en el teléfono (IndexedDB).
+- **Progreso**: minutos por día, niveles, lo que te funciona y logros.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Todos los datos viven en el navegador (localStorage e IndexedDB). Solo el chat sale a internet.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Correr en local
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Pon tu API key de Anthropic en `.env.local`:
+   ```
+   ANTHROPIC_API_KEY=sk-ant-...
+   ```
+2. `npm install` y `npm run dev`.
+3. Abre http://localhost:3000. Para probar en el celular, usa la dirección "Network" que imprime Next.js (misma red wifi).
 
-## Learn More
+## Instalarla en el celular
 
-To learn more about Next.js, take a look at the following resources:
+Despliégala (por ejemplo en Vercel, agregando `ANTHROPIC_API_KEY` en las variables de entorno), ábrela en el navegador del celular y usa "Agregar a pantalla de inicio".
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Ojo: la ruta `/api/chat` no tiene contraseña. Si la despliegas en una URL pública, cualquiera que la encuentre podría usar tu API key.

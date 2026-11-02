@@ -1,26 +1,172 @@
 @import "tailwindcss";
 
+/* Río y Brasa — ver DESIGN.md */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --canvas: #f5f7f4;
+  --surface: #edf2ec;
+  --surface-nested: #e2eae1;
+  --surface-warm: #f6f0e9;
+  --surface-warm-nested: #ede5db;
+  --surface-raised: #ffffff;
+  --ink: #1c2420;
+  --ink-soft: #5a6b61;
+  --ink-faint: #7d8c83;
+  --line: rgba(118, 138, 126, 0.16);
+  --primary: #1e3a2f;
+  --on-primary: #f5f7f4;
+  --primary-hover: #274c3d;
+  --focus: #3b7a68;
+  --focus-tint: #d3e6dd;
+  --on-focus-tint: #1f4a3d;
+  --energy: #b5573a;
+  --energy-hover: #9e4930;
+  --on-energy: #ffffff;
+  --energy-tint: #f6ddd2;
+  --on-energy-tint: #7a2f15;
+  --achievement: #d4a373;
+  --achievement-tint: #f5e6d3;
+  --on-achievement-tint: #6b4410;
+  --calm: #e4e1ee;
+  --on-calm: #463f66;
+  /* Modo foco: siempre bonsái */
+  --zen: #1e3a2f;
+  --zen-raised: #274c3d;
+  --zen-ring: #2e5446;
+  --zen-accent: #7fbfaa;
+  --zen-ink: #f5f7f4;
+  --zen-soft: #a8cbbb;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --canvas: #121915;
+    --surface: #1a231e;
+    --surface-nested: #232e28;
+    --surface-warm: #211d19;
+    --surface-warm-nested: #2c2622;
+    --surface-raised: #26312b;
+    --ink: #e4ece6;
+    --ink-soft: #9db0a5;
+    --ink-faint: #71837a;
+    --line: rgba(200, 216, 206, 0.1);
+    --primary: #a8cbbb;
+    --on-primary: #0e241b;
+    --primary-hover: #bcd9cb;
+    --focus: #7fbfaa;
+    --focus-tint: #1d3a31;
+    --on-focus-tint: #bfe3d5;
+    --energy: #e89a7c;
+    --energy-hover: #f0ae94;
+    --on-energy: #2a1208;
+    --energy-tint: #3b2418;
+    --on-energy-tint: #f6cdbb;
+    --achievement: #e2bc8e;
+    --achievement-tint: #3a2f1f;
+    --on-achievement-tint: #f0d3ae;
+    --calm: #2a2738;
+    --on-calm: #d2ccec;
+    --zen: #15291f;
+    --zen-raised: #1e3a2f;
+    --zen-ring: #274c3d;
   }
 }
 
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-nested: var(--surface-nested);
+  --color-surface-warm: var(--surface-warm);
+  --color-surface-warm-nested: var(--surface-warm-nested);
+  --color-surface-raised: var(--surface-raised);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-focus: var(--focus);
+  --color-focus-tint: var(--focus-tint);
+  --color-on-focus-tint: var(--on-focus-tint);
+  --color-energy: var(--energy);
+  --color-energy-hover: var(--energy-hover);
+  --color-on-energy: var(--on-energy);
+  --color-energy-tint: var(--energy-tint);
+  --color-on-energy-tint: var(--on-energy-tint);
+  --color-achievement: var(--achievement);
+  --color-achievement-tint: var(--achievement-tint);
+  --color-on-achievement-tint: var(--on-achievement-tint);
+  --color-calm: var(--calm);
+  --color-on-calm: var(--on-calm);
+  --color-zen: var(--zen);
+  --color-zen-raised: var(--zen-raised);
+  --color-zen-ring: var(--zen-ring);
+  --color-zen-accent: var(--zen-accent);
+  --color-zen-ink: var(--zen-ink);
+  --color-zen-soft: var(--zen-soft);
+  --font-sans: var(--font-jakarta), system-ui, sans-serif;
+  --font-serif: var(--font-newsreader), Georgia, serif;
+  --ease-calm: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  font-feature-settings: "tnum" 1;
+}
+
+button {
+  cursor: pointer;
+}
+
+.fade-in {
+  animation: fade-in 320ms var(--ease-calm) both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.glow {
+  animation: glow 1800ms var(--ease-calm) both;
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--achievement) 60%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 48px transparent;
+  }
+}
+
+.breathe {
+  animation: breathe 2400ms ease-in-out infinite;
+}
+
+@keyframes breathe {
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in,
+  .glow,
+  .breathe {
+    animation: none;
+  }
 }
