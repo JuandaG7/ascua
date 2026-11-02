@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { IconArrowUp, IconCheck, IconPlus, IconTrash } from "@tabler/icons-react";
-import { getState, setState, today, useAppState } from "@/lib/store";
+import { IconArrowUp, IconCheck, IconKey, IconPlus, IconTrash } from "@tabler/icons-react";
+import { getState, setState, useAppState } from "@/lib/store";
 import { addToPlan, type PlanInput } from "@/lib/plan";
-import { levelInfo } from "@/lib/levels";
+import { MissingKeyError, streamReply } from "@/lib/chat";
 import type { Category, ChatMessage } from "@/lib/types";
 import { CAT_STYLE, CategoryIcon, PageTitle } from "@/components/ui";
 
@@ -31,25 +32,6 @@ const SUGGESTIONS = [
   "Recomiéndame una peli para hoy",
   "Un álbum para escuchar sin hacer nada más",
 ];
-
-function buildContext() {
-  const s = getState();
-  const lvl = levelInfo(s.level);
-  return {
-    level: lvl.level,
-    levelName: lvl.name,
-    levelMinutes: lvl.minutes,
-    energyToday: s.checkIns.find((c) => c.date === today())?.energy,
-    recentSessions: s.sessions.slice(-12).map(({ category, title, actualMin, completed, helped }) => ({
-      category,
-      title,
-      actualMin,
-      completed,
-      helped,
-    })),
-    plan: s.plan.filter((p) => !p.done).map(({ category, title }) => ({ category, title })),
-  };
-}
 
 function RecCard({ rec }: { rec: PlanInput }) {
   const state = useAppState();
@@ -78,6 +60,7 @@ export default function Chat() {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [missingKey, setMissingKey] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,6 +71,7 @@ export default function Chat() {
     const content = text.trim();
     if (!content || streaming !== null) return;
     setError("");
+    setMissingKey(false);
     setInput("");
     const history: ChatMessage[] = [...getState().chat, { role: "user", content }];
     setState((s) => ({ ...s, chat: history }));
@@ -95,27 +79,13 @@ export default function Chat() {
 
     let reply = "";
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history, context: buildContext() }),
+      reply = await streamReply(history, (full) => {
+        reply = full;
+        setStreaming(full);
       });
-      if (!res.ok || !res.body) throw new Error(await res.text());
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        reply += decoder.decode(value, { stream: true });
-        setStreaming(reply);
-      }
-      const errIdx = reply.indexOf("[error]");
-      if (errIdx >= 0) {
-        setError(reply.slice(errIdx + 7).trim());
-        reply = reply.slice(0, errIdx).trim();
-      }
     } catch (e) {
-      setError(e instanceof Error && e.message ? e.message : "No se pudo conectar. Intenta de nuevo.");
+      if (e instanceof MissingKeyError) setMissingKey(true);
+      else setError(e instanceof Error && e.message ? e.message : "No se pudo conectar. Intenta de nuevo.");
     }
     if (reply) setState((s) => ({ ...s, chat: [...s.chat, { role: "assistant", content: reply }] }));
     else setState((s) => ({ ...s, chat: s.chat.slice(0, -1) }));
@@ -172,6 +142,14 @@ export default function Chat() {
             </div>
           );
         })}
+        {missingKey && (
+          <Link href="/ajustes" className="flex items-center gap-3 rounded-[20px] bg-surface-warm px-4 py-3 text-on-energy-tint">
+            <IconKey size={20} stroke={1.6} aria-hidden />
+            <span className="text-[13px]">
+              Para usar el chat, agrega tu API key de Anthropic en <span className="font-semibold underline">Ajustes</span>.
+            </span>
+          </Link>
+        )}
         {error && <p className="rounded-[16px] bg-surface-warm px-4 py-3 text-[13px] text-on-energy-tint">{error}</p>}
         <div ref={endRef} />
       </div>

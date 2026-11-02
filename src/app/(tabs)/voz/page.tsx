@@ -13,16 +13,9 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import { uid } from "@/lib/store";
+import { LIST_KEY, audioKey, type Recording } from "@/lib/voice";
 import { PageTitle } from "@/components/ui";
 
-interface Recording {
-  id: string;
-  createdAt: string;
-  seconds: number;
-  type: string;
-}
-
-const LIST_KEY = "voz:lista";
 const PROMPTS = ["¿Qué te está dando vueltas?", "¿Qué te pesa hoy?", "¿Qué necesitas soltar antes de empezar?"];
 
 function fmt(sec: number) {
@@ -81,7 +74,7 @@ function Voice() {
           seconds: Math.round((Date.now() - startRef.current) / 1000),
           type,
         };
-        await set(`voz:${item.id}`, blob);
+        await set(audioKey(item.id), blob);
         const next = [item, ...((await get<Recording[]>(LIST_KEY)) ?? [])];
         await set(LIST_KEY, next);
         setList(next);
@@ -109,7 +102,7 @@ function Voice() {
       return;
     }
     audioRef.current?.pause();
-    const blob = await get<Blob>(`voz:${r.id}`);
+    const blob = await get<Blob>(audioKey(r.id));
     if (!blob) return;
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
@@ -125,7 +118,7 @@ function Voice() {
   const remove = async (r: Recording) => {
     if (!window.confirm("¿Borrar esta grabación? No se puede recuperar.")) return;
     if (playing === r.id) audioRef.current?.pause();
-    await del(`voz:${r.id}`);
+    await del(audioKey(r.id));
     const next = list.filter((x) => x.id !== r.id);
     await set(LIST_KEY, next);
     setList(next);

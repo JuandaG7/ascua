@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { IconArrowsShuffle, IconCheck, IconPlayerPlay, IconWind } from "@tabler/icons-react";
+import { IconArrowsShuffle, IconCheck, IconPlayerPlay, IconSettings, IconWind } from "@tabler/icons-react";
 import { setState, today, useAppState } from "@/lib/store";
 import {
   CATEGORY_LABEL,
@@ -58,11 +58,21 @@ export default function Home() {
 
   const dateLabel = new Date().toLocaleDateString("es", { weekday: "long", day: "numeric", month: "short" });
   const pendingPlan = state.plan.filter((p) => !p.done);
+  const needsBackup =
+    state.sessions.length >= 3 &&
+    (!state.lastBackupAt || Date.now() - new Date(state.lastBackupAt).getTime() > 14 * 864e5);
 
   return (
     <div className="fade-in">
-      <p className="text-[12px] font-medium tracking-[0.02em] text-ink-soft first-letter:uppercase">{dateLabel}</p>
-      <h1 className="mt-1 mb-5 font-serif text-[28px] leading-9 tracking-[-0.01em]">¿Cómo llegas hoy?</h1>
+      <div className="flex items-start justify-between">
+        <p className="pt-1 text-[12px] font-medium tracking-[0.02em] text-ink-soft first-letter:uppercase">{dateLabel}</p>
+        <Link href="/ajustes" className="-mt-1 -mr-2 rounded-full p-2 text-ink-faint" aria-label="Ajustes">
+          <IconSettings size={22} stroke={1.6} />
+        </Link>
+      </div>
+      <h1 className="mb-5 font-serif text-[28px] leading-9 tracking-[-0.01em]">
+        ¿Cómo llegas hoy{state.name?.trim() ? `, ${state.name.trim()}` : ""}?
+      </h1>
 
       <section className="mb-3 rounded-[28px] bg-surface-warm p-3" aria-label="Tu energía hoy">
         <div className="flex gap-2" role="radiogroup">
@@ -154,6 +164,12 @@ export default function Home() {
           {good}/{needed} para subir
         </p>
       </section>
+
+      {needsBackup && (
+        <Link href="/ajustes" className="mb-3 block rounded-[24px] border border-line px-5 py-3 text-[13px] text-ink-soft">
+          Hace rato no haces una copia de seguridad. <span className="font-medium text-ink underline">Hacerla ahora</span>
+        </Link>
+      )}
 
       {pendingPlan.length > 0 && (
         <section className="mt-6">

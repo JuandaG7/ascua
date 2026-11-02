@@ -1,17 +1,18 @@
 # Roadmap de Brasa
 
-Estado actual (v1): check-in de energía, reto diario por nivel, modo foco, niveles, biblioteca con 23 recomendaciones, chat con Claude, diario de voz local y progreso. Todo guardado en el navegador.
+Estado actual (v1.1): check-in de energía, reto diario por nivel, modo foco, niveles, biblioteca con 23 recomendaciones, chat con Claude, diario de voz local, progreso, ajustes y copias de seguridad. Todo guardado en el teléfono.
 
 ## Fase 1 · Usarla de verdad en el celular
 
 Sin esto la app funciona, pero no está lista para el día a día.
 
-- [ ] **Despliegue con HTTPS** (Vercel). Hace falta para el micrófono y para instalarla en la pantalla de inicio.
-- [ ] **Proteger el chat** con una clave sencilla. Sin ella, cualquiera con la URL gasta tu API key.
-- [ ] **Respaldo de datos:** exportar e importar un archivo. Hoy, si borras los datos del navegador o cambias de celular, pierdes todo.
-- [ ] **Modo sin conexión** (service worker): que abra aunque no haya internet. Solo el chat necesita red.
-- [ ] **Íconos PNG de 192 y 512 px** para que Android la instale bien.
-- [ ] **Ajustes:** editar o borrar sesiones, reiniciar el progreso, tu nombre para el saludo.
+- [x] **Publicada con HTTPS** en GitHub Pages, igual que las otras apps. Hace falta para el micrófono y para instalarla.
+- [x] **Chat sin servidor:** la API key se guarda solo en el teléfono, así que no hay un endpoint público que otros puedan usar.
+- [x] **Copia de seguridad:** exportar e importar un archivo (con o sin grabaciones), con un aviso si hace más de 14 días que no la haces.
+- [x] **Modo sin conexión** (service worker): abre aunque no haya internet. Solo el chat necesita red.
+- [x] **Íconos PNG** de 180, 192 y 512 px.
+- [x] **Ajustes:** tu nombre, la API key, borrar sesiones y reiniciar el progreso.
+- [ ] **Probar en el iPhone:** micrófono, instalación, modo sin conexión y chat con la key real.
 
 ## Fase 2 · Que te conozca mejor
 

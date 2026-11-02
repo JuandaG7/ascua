@@ -40,4 +40,6 @@ export interface AppState {
   plan: PlanItem[];
   chat: ChatMessage[];
   level: number;
+  name?: string;
+  lastBackupAt?: string;
 }
