@@ -1,4 +1,5 @@
-import type { Category, Profile } from "./types";
+import type { Category, Profile, WorkCategory } from "./types";
+import { ACTIVITIES, ALL_CATEGORIES, type Group } from "./activities";
 
 export const ATTENTION_OPTIONS = [
   { value: "menos5", label: "Menos de 5 minutos", level: 1 },
@@ -7,10 +8,17 @@ export const ATTENTION_OPTIONS = [
   { value: "mas30", label: "Más de 30 minutos", level: 3 },
 ] as const;
 
-export const WANT_OPTIONS: { value: Category; label: string; sub: string }[] = [
-  { value: "leer", label: "Leer", sub: "Volver a terminar libros" },
-  { value: "ver", label: "Ver", sub: "Películas completas, sin el celular" },
-  { value: "escuchar", label: "Escuchar", sub: "Álbumes de principio a fin" },
+export const WANT_OPTIONS: { value: Category; label: string; sub: string; group: Group }[] = ALL_CATEGORIES.map((c) => ({
+  value: c,
+  label: ACTIVITIES[c].label,
+  sub: ACTIVITIES[c].sub,
+  group: ACTIVITIES[c].group,
+}));
+
+export const FAVORITE_PROMPTS: { category: WorkCategory; label: string; placeholder: string }[] = [
+  { category: "leer", label: "Libros", placeholder: "Cien años de soledad" },
+  { category: "ver", label: "Películas o series", placeholder: "Coco" },
+  { category: "escuchar", label: "Álbumes o artistas", placeholder: "Un verano sin ti" },
 ];
 
 export const STORY_LIKES = [
@@ -82,8 +90,13 @@ export function focusTip(p?: Profile): string | undefined {
 export function profileForChat(p?: Profile) {
   if (!p) return "Aún no respondió las preguntas iniciales.";
   const likes = [...STORY_LIKES, ...MUSIC_LIKES].filter((o) => p.likes.includes(o.value)).map((o) => o.label);
+  const favs = FAVORITE_PROMPTS.map((f) => {
+    const list = p.favorites?.[f.category] ?? [];
+    return list.length ? `${f.label}: ${list.join(", ")}` : "";
+  }).filter(Boolean);
   return [
-    `Quiere recuperar: ${p.wants.join(", ")}.`,
+    `Quiere recuperar: ${p.wants.map((c) => ACTIVITIES[c].label).join(", ")}.`,
+    `Sus favoritos: ${favs.length ? favs.join(". ") : "no los dijo"}.`,
     `Le gusta: ${likes.length ? likes.join(", ") : "no lo dijo"}.`,
     `Lo que más le distrae: ${DISTRACTOR_OPTIONS.filter((o) => p.distractors.includes(o.value)).map((o) => o.label).join(", ") || "no lo dijo"}.`,
     `Tiene más tiempo: ${label(TIME_OPTIONS, p.time) ?? "no lo dijo"}.`,

@@ -1,5 +1,6 @@
-import type { Category, Profile } from "./types";
+import type { Category, FinishedWork, Profile } from "./types";
 import { MUSIC_LIKES, STORY_LIKES } from "./profile";
+import { DEFAULT_CATEGORIES } from "./activities";
 
 export interface CatalogItem {
   id: string;
@@ -53,7 +54,33 @@ export const CATALOG: CatalogItem[] = [
   { id: "e5", category: "escuchar", title: "Blonde", by: "Frank Ocean", meta: "60 min", minutes: 60, minLevel: 3, why: "Íntimo y cambiante: pide atención real.", tags: ["hiphop", "pop"] },
   { id: "e6", category: "escuchar", title: "Random Access Memories", by: "Daft Punk", meta: "74 min", minutes: 74, minLevel: 4, why: "Largo, con mucho detalle en cada capa.", tags: ["electronica", "pop"] },
   { id: "e7", category: "escuchar", title: "To Pimp a Butterfly", by: "Kendrick Lamar", meta: "79 min", minutes: 79, minLevel: 5, why: "Denso en letra y sonido. Un álbum para escuchar, no de fondo.", tags: ["hiphop", "jazz"] },
+  // Escribir
+  { id: "w1", category: "escribir", title: "Escribe 3 cosas que salieron bien hoy", by: "Idea", meta: "10 min", minutes: 10, minLevel: 1, why: "Corto, y entrena fijarte en lo bueno del día.", tags: [] },
+  { id: "w2", category: "escribir", title: "Escribe sin parar lo que te da vueltas", by: "Idea", meta: "15 min", minutes: 15, minLevel: 1, why: "Escritura libre: vacía la cabeza como el diario de voz, pero en papel.", tags: [] },
+  { id: "w3", category: "escribir", title: "Escríbele una carta a alguien", by: "Idea", meta: "20 min", minutes: 20, minLevel: 2, why: "No hace falta enviarla. Pensar en otra persona cambia el ánimo.", tags: [] },
+  { id: "w4", category: "escribir", title: "Escribe un cuento de una página", by: "Idea", meta: "30 min", minutes: 30, minLevel: 3, why: "Inventar una historia pide atención de principio a fin.", tags: [] },
+  // Dibujar
+  { id: "d1", category: "dibujar", title: "Dibuja tu mano sin mirar el papel", by: "Idea", meta: "10 min", minutes: 10, minLevel: 1, why: "Dibujo a ciegas: imposible hacerlo mal, y obliga a mirar de verdad.", tags: [] },
+  { id: "d2", category: "dibujar", title: "Dibuja lo que ves por tu ventana", by: "Idea", meta: "20 min", minutes: 20, minLevel: 2, why: "Descubres detalles que ves todos los días y nunca miraste.", tags: [] },
+  { id: "d3", category: "dibujar", title: "Dibuja un mapa de tu barrio de memoria", by: "Idea", meta: "25 min", minutes: 25, minLevel: 2, why: "Un reto para la memoria y la imaginación al mismo tiempo.", tags: [] },
+  { id: "d4", category: "dibujar", title: "Pinta una fruta o una taza que tengas cerca", by: "Idea", meta: "30 min", minutes: 30, minLevel: 3, why: "Luz, sombras y color: el ejercicio clásico de los pintores.", tags: [] },
+  // Cocinar
+  { id: "c1", category: "cocinar", title: "Prepara un desayuno con calma, sin pantalla", by: "Idea", meta: "15 min", minutes: 15, minLevel: 1, why: "Empezar el día sin pantalla cambia cómo te sientes el resto del día.", tags: [] },
+  { id: "c2", category: "cocinar", title: "Cocina una receta de tu familia", by: "Idea", meta: "45 min", minutes: 45, minLevel: 2, why: "Pregúntale antes los secretos a quien te la enseñó.", tags: [] },
+  { id: "c3", category: "cocinar", title: "Prepara una sopa desde cero", by: "Idea", meta: "45 min", minutes: 45, minLevel: 3, why: "Picar, esperar, probar: cocina lenta para una cabeza rápida.", tags: [] },
+  { id: "c4", category: "cocinar", title: "Haz pan de banano", by: "Idea", meta: "60 min", minutes: 60, minLevel: 3, why: "Fácil, huele delicioso y te obliga a esperar sin mirar el celular.", tags: [] },
+  // Caminar
+  { id: "k1", category: "caminar", title: "Camina 10 minutos sin celular ni audífonos", by: "Idea", meta: "10 min", minutes: 10, minLevel: 1, why: "Diez minutos de luz y movimiento ya cambian la energía.", tags: [] },
+  { id: "k2", category: "caminar", title: "Camina hasta un lugar con árboles y quédate 5 minutos", by: "Idea", meta: "25 min", minutes: 25, minLevel: 2, why: "El verde baja el estrés más rápido de lo que crees.", tags: [] },
+  { id: "k3", category: "caminar", title: "Sal a caminar al amanecer o al atardecer", by: "Idea", meta: "30 min", minutes: 30, minLevel: 3, why: "La luz de esas horas ayuda a regular el sueño y la energía.", tags: [] },
+  { id: "k4", category: "caminar", title: "Camina una ruta nueva por tu barrio", by: "Idea", meta: "40 min", minutes: 40, minLevel: 4, why: "Lo nuevo despierta la atención sin que tengas que esforzarte.", tags: [] },
 ];
+
+export const workKey = (title: string) =>
+  title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+
+export const isFinished = (title: string, finished?: FinishedWork[]) =>
+  Boolean(finished?.some((f) => f.key === workKey(title)));
 
 const LIKE_LABEL = Object.fromEntries([...STORY_LIKES, ...MUSIC_LIKES].map((o) => [o.value, o.label]));
 
@@ -67,11 +94,14 @@ export function matchReason(item: CatalogItem, profile?: Profile): string | unde
  * Recomendaciones para tu nivel, primero las que coinciden con tus gustos.
  * Las categorías que no elegiste en las preguntas iniciales no aparecen.
  */
-export function recommendedFor(level: number, profile?: Profile) {
-  const wants = profile?.wants.length ? profile.wants : (["leer", "ver", "escuchar"] as Category[]);
+export function recommendedFor(level: number, profile?: Profile, finished?: FinishedWork[]) {
+  const wants = profile?.wants.length ? profile.wants : DEFAULT_CATEGORIES;
   const score = (c: CatalogItem) => {
     const matches = c.tags.filter((t) => profile?.likes.includes(t)).length;
     return Math.abs(c.minLevel - level) * 1.5 - Math.min(matches, 2) * 2;
   };
-  return CATALOG.filter((c) => wants.includes(c.category) && c.minLevel <= level + 1).sort((a, b) => score(a) - score(b));
+  // Lo que ya terminaste o dejaste no se vuelve a recomendar (las ideas de crear y moverte sí se repiten).
+  return CATALOG.filter(
+    (c) => wants.includes(c.category) && c.minLevel <= level + 1 && !(c.by !== "Idea" && isFinished(c.title, finished)),
+  ).sort((a, b) => score(a) - score(b));
 }

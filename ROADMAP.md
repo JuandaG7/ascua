@@ -20,12 +20,15 @@ Aquí la app pasa de "lista fija" a "recomendaciones para ti".
 
 - [x] **Preguntas iniciales:** cuánto aguantas hoy (nivel de partida), qué quieres recuperar, tus gustos, cuándo tienes tiempo, qué te distrae y tu meta. Ordenan las recomendaciones, eligen el reto diario, dan consejos en el modo foco y le dan contexto al chat.
 
-- [ ] **Recomendaciones de la Biblioteca generadas por IA** según tus gustos, tu nivel y lo que te ayudó, no solo las 23 fijas.
-- [ ] **Marcar obras:** "ya lo vi", "no me interesa", "lo terminé". El chat y la biblioteca lo tienen en cuenta.
+- [x] **Más actividades:** escribir, dibujar, cocinar y caminar, con retos e ideas por nivel (grupos Disfrutar, Crear y Moverte).
+- [x] **Tus favoritos** (libros, películas, álbumes) en las preguntas iniciales.
+- [x] **Recomendaciones de Claude en la Biblioteca** según tus favoritos, lo que terminaste y lo que te pareció.
+- [x] **Marcar obras como terminadas o dejadas**, con qué te pareció, si agarraste el celular y una nota. No se vuelven a recomendar; el chat y Claude usan tu opinión.
+- [x] **Al terminar una sesión:** "¿Agarraste el celular?" y, si era una obra, "¿La terminaste? ¿Qué te pareció?". En Progreso: % de sesiones sin celular.
+- [ ] **"No me interesa"** para descartar una recomendación sin haberla visto.
 - [ ] **Progreso por libro:** páginas totales, por dónde vas y un logro al terminarlo.
-- [ ] **Perfil de gustos** que el chat recuerda (géneros, autores, lo que odiaste).
+- [x] **Perfil de gustos** que el chat recuerda: géneros, favoritos y lo que te gustó o no.
 - [ ] **Chat con tool use** en lugar de etiquetas en el texto: más fiable al agregar cosas al plan.
-- [ ] **Más actividades:** escribir, dibujar, caminar sin celular, cocinar.
 - [ ] **Sonidos ambiente en modo foco** (río, lluvia, fuego), muy suaves y opcionales.
 
 ## Fase 3 · Entender cómo estás

@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { IconArrowLeft, IconCheck } from "@tabler/icons-react";
+import { useEffect, useRef, useState } from "react";
+import { IconArrowLeft, IconCheck, IconPlus, IconX } from "@tabler/icons-react";
 import { getState, setState } from "@/lib/store";
 import {
   ATTENTION_OPTIONS,
   DISTRACTOR_OPTIONS,
+  FAVORITE_PROMPTS,
   GOAL_OPTIONS,
   MUSIC_LIKES,
   STORY_LIKES,
@@ -15,11 +16,12 @@ import {
   startingLevel,
 } from "@/lib/profile";
 import { levelInfo } from "@/lib/levels";
-import type { Category, Profile } from "@/lib/types";
+import { GROUPS } from "@/lib/activities";
+import type { Category, Profile, WorkCategory } from "@/lib/types";
 
 type Draft = Omit<Profile, "completedAt" | "attention"> & { attention?: Profile["attention"] };
 
-const STEPS = ["intro", "atencion", "quiere", "gustos", "tiempo", "distrae", "meta", "listo"] as const;
+const STEPS = ["intro", "atencion", "quiere", "gustos", "favoritos", "tiempo", "distrae", "meta", "listo"] as const;
 
 function Option({
   selected,
@@ -71,6 +73,85 @@ function Chip({ selected, onClick, label }: { selected: boolean; onClick: () => 
 
 const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
+const MAX_FAVORITES = 5;
+
+/** Campo para escribir favoritos uno por uno; se muestran como etiquetas que se pueden quitar. */
+function FavoriteInput({
+  label,
+  placeholder,
+  items,
+  onChange,
+  onPending,
+}: {
+  label: string;
+  placeholder: string;
+  items: string[];
+  onChange: (items: string[]) => void;
+  onPending: (text: string) => void; // lo escrito sin tocar +, para no perderlo al seguir
+}) {
+  const [text, setTextState] = useState("");
+  const setText = (t: string) => {
+    setTextState(t);
+    onPending(t);
+  };
+  const add = () => {
+    const t = text.trim();
+    if (!t || items.length >= MAX_FAVORITES || items.some((i) => i.toLowerCase() === t.toLowerCase())) return setText("");
+    onChange([...items, t]);
+    setText("");
+  };
+  const id = `fav-${label}`;
+  return (
+    <div className="mb-6">
+      <label htmlFor={id} className="mb-2 block text-[13px] font-medium text-ink-soft">
+        {label}
+      </label>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          add();
+        }}
+        className="flex gap-2"
+      >
+        <input
+          id={id}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onBlur={add}
+          placeholder={items.length >= MAX_FAVORITES ? "Máximo 5" : placeholder}
+          disabled={items.length >= MAX_FAVORITES}
+          autoComplete="off"
+          className="h-11 min-w-0 flex-1 rounded-full bg-surface-raised px-4 text-[15px] outline-none ring-1 ring-line placeholder:text-ink-faint focus:ring-2 focus:ring-focus"
+        />
+        <button
+          type="submit"
+          className="grid size-11 shrink-0 place-items-center rounded-full bg-surface-nested text-ink"
+          aria-label={`Agregar a ${label.toLowerCase()}`}
+        >
+          <IconPlus size={18} />
+        </button>
+      </form>
+      {items.length > 0 && (
+        <ul className="mt-2 flex flex-wrap gap-2">
+          {items.map((i) => (
+            <li key={i} className="flex h-9 items-center gap-1 rounded-full bg-primary pr-1 pl-4 text-[13px] font-medium text-on-primary">
+              {i}
+              <button
+                type="button"
+                onClick={() => onChange(items.filter((x) => x !== i))}
+                className="grid size-7 place-items-center rounded-full"
+                aria-label={`Quitar ${i}`}
+              >
+                <IconX size={14} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function Bienvenida() {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -91,18 +172,49 @@ export default function Bienvenida() {
     setD((x) => ({ ...x, ...(typeof patch === "function" ? patch(x) : patch) }));
   };
 
+  const showStories = d.wants.includes("leer") || d.wants.includes("ver");
+  const showMusic = d.wants.includes("escuchar");
+  const favoritePrompts = FAVORITE_PROMPTS.filter((f) => d.wants.includes(f.category));
+  // Sin obras elegidas no tiene sentido preguntar gustos ni favoritos.
+  const skips = (i: number) =>
+    (STEPS[i] === "gustos" && !showStories && !showMusic) || (STEPS[i] === "favoritos" && favoritePrompts.length === 0);
+
+  const go = (dir: 1 | -1) => {
+    setError("");
+    setStep((s) => {
+      let n = s + dir;
+      while (n > 0 && n < STEPS.length - 1 && skips(n)) n += dir;
+      return Math.max(0, Math.min(STEPS.length - 1, n));
+    });
+    window.scrollTo({ top: 0 });
+  };
+
   const next = () => {
     if (id === "atencion" && !d.attention) return setError("Elige una opción para seguir.");
     if (id === "quiere" && d.wants.length === 0) return setError("Elige al menos una.");
     if (id === "listo") return finish();
-    setError("");
-    setStep((s) => s + 1);
-    window.scrollTo({ top: 0 });
+    if (id === "favoritos") commitPending();
+    go(1);
   };
 
-  const back = () => {
-    setError("");
-    setStep((s) => Math.max(0, s - 1));
+  const back = () => go(-1);
+
+  const setFavorites = (c: WorkCategory, items: string[]) =>
+    update((x) => ({ favorites: { ...x.favorites, [c]: items } }));
+
+  const pending = useRef<Partial<Record<WorkCategory, string>>>({});
+  const commitPending = () => {
+    const entries = Object.entries(pending.current) as [WorkCategory, string][];
+    pending.current = {};
+    update((x) => {
+      const favorites = { ...x.favorites };
+      for (const [c, t] of entries) {
+        const list = favorites[c] ?? [];
+        const v = t.trim();
+        if (v && list.length < MAX_FAVORITES && !list.some((i) => i.toLowerCase() === v.toLowerCase())) favorites[c] = [...list, v];
+      }
+      return { favorites };
+    });
   };
 
   const start = startingLevel(d.attention ?? "menos5");
@@ -118,9 +230,6 @@ export default function Bienvenida() {
     }));
     router.replace("/");
   };
-
-  const showStories = d.wants.includes("leer") || d.wants.includes("ver");
-  const showMusic = d.wants.includes("escuchar");
 
   return (
     <main
@@ -182,19 +291,24 @@ export default function Bienvenida() {
         )}
 
         {id === "quiere" && (
-          <Question title="¿Qué te gustaría volver a disfrutar?" sub="Puedes elegir varias. Solo te propondremos retos de estas.">
-            <div className="space-y-2">
-              {WANT_OPTIONS.map((o) => (
-                <Option
-                  key={o.value}
-                  multi
-                  label={o.label}
-                  sub={o.sub}
-                  selected={d.wants.includes(o.value)}
-                  onClick={() => update((x) => ({ wants: toggle<Category>(x.wants, o.value) }))}
-                />
-              ))}
-            </div>
+          <Question title="¿Qué te gustaría hacer más?" sub="Puedes elegir varias. Solo te propondremos retos de estas.">
+            {GROUPS.map((g) => (
+              <div key={g.id} className="mb-5">
+                <p className="mb-2 text-[13px] font-medium text-ink-soft">{g.label}</p>
+                <div className="space-y-2">
+                  {WANT_OPTIONS.filter((o) => o.group === g.id).map((o) => (
+                    <Option
+                      key={o.value}
+                      multi
+                      label={o.label}
+                      sub={o.sub}
+                      selected={d.wants.includes(o.value)}
+                      onClick={() => update((x) => ({ wants: toggle<Category>(x.wants, o.value) }))}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </Question>
         )}
 
@@ -220,6 +334,24 @@ export default function Bienvenida() {
                 </div>
               </>
             )}
+          </Question>
+        )}
+
+        {id === "favoritos" && (
+          <Question
+            title="¿Cuáles son tus favoritos?"
+            sub="Escribe uno y toca +. Con esto sabemos qué recomendarte y el chat entiende tu gusto."
+          >
+            {favoritePrompts.map((f) => (
+              <FavoriteInput
+                key={f.category}
+                label={f.label}
+                placeholder={f.placeholder}
+                items={d.favorites?.[f.category] ?? []}
+                onChange={(items) => setFavorites(f.category, items)}
+                onPending={(t) => (pending.current[f.category] = t)}
+              />
+            ))}
           </Question>
         )}
 
@@ -296,8 +428,8 @@ export default function Bienvenida() {
       >
         {id === "intro" ? "Empezar" : id === "listo" ? "Ir a mi primer reto" : "Seguir"}
       </button>
-      {["gustos", "tiempo", "distrae", "meta"].includes(id) && (
-        <button onClick={() => setStep((s) => s + 1)} className="mt-2 h-10 text-[13px] text-ink-faint">
+      {["gustos", "favoritos", "tiempo", "distrae", "meta"].includes(id) && (
+        <button onClick={() => go(1)} className="mt-2 h-10 text-[13px] text-ink-faint">
           Saltar esta pregunta
         </button>
       )}

@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getState, today } from "./store";
 import { levelInfo } from "./levels";
 import { profileForChat } from "./profile";
+import { phoneLabel, ratingLabel } from "./works";
 import type { ChatMessage } from "./types";
 
 const KEY_STORAGE = "ascua:anthropic-key";
@@ -25,7 +26,7 @@ export function setApiKey(key: string) {
   }
 }
 
-const BASE_PROMPT = `Eres el compañero de lectura, cine y música dentro de Ascua, una app personal para recuperar la capacidad de atención y la energía. La persona siente que el scroll y el contenido corto le dejaron el "cerebro podrido" y está entrenando su atención poco a poco, con niveles.
+const BASE_PROMPT = `Eres el compañero de lectura, cine, música y actividades creativas dentro de Ascua, una app personal para recuperar la capacidad de atención y la energía. La persona siente que el scroll y el contenido corto le dejaron el "cerebro podrido" y está entrenando su atención poco a poco, con niveles.
 
 Cómo responder:
 - En español, cálido y directo, como un amigo que sabe mucho de libros, películas y música. Respuestas cortas para leer en el celular: 2 a 5 frases normalmente.
@@ -36,7 +37,7 @@ Cómo responder:
 
 Cuando recomiendes una obra concreta que pueda agregar a su plan, añade al final de tu mensaje una línea por obra con este formato exacto (máximo 3):
 [[plan|categoria|Título|Autor o año|duración legible|minutos]]
-- categoria es leer, ver o escuchar
+- categoria es leer, ver, escuchar, escribir, dibujar, cocinar o caminar (para estas últimas, el título es la idea concreta y el autor es "Idea")
 - duración legible: por ejemplo "180 págs" o "95 min"
 - minutos: minutos de una sesión típica (para libros, una sesión de lectura acorde a su nivel; para películas y álbumes, la duración total)
 Ejemplo: [[plan|leer|El principito|Antoine de Saint-Exupéry|96 págs|15]]
@@ -58,6 +59,17 @@ function contextBlock() {
         )
         .join("\n")
     : "- Aún no tiene sesiones.";
+  const finished = (s.finished ?? []).slice(0, 25);
+  const finishedLines = finished.length
+    ? finished
+        .map(
+          (f) =>
+            `- ${f.category}: "${f.title}" (${f.status === "terminado" ? "lo terminó" : "lo dejó"}${
+              f.rating ? `, ${ratingLabel(f.rating)?.toLowerCase()}` : ""
+            }${f.phone ? `, agarró el celular: ${phoneLabel(f.phone)?.toLowerCase()}` : ""}${f.note ? `, nota: "${f.note}"` : ""})`,
+        )
+        .join("\n")
+    : "- Nada todavía.";
   const plan = s.plan.filter((p) => !p.done);
   const planLines = plan.length ? plan.map((p) => `- ${p.category}: ${p.title}`).join("\n") : "- Vacío.";
   return `Contexto actual de la persona:
@@ -67,6 +79,8 @@ Energía hoy: ${energy ?? "no la marcó"}.
 ${sessionLines}
 Su plan:
 ${planLines}
+Obras que ya terminó o dejó, con su opinión (no se las recomiendes de nuevo):
+${finishedLines}
 Lo que contó al empezar:
 ${profileForChat(s.profile)}`;
 }

@@ -1,4 +1,5 @@
 import type { AppState, Category, Energy, PlanItem, Session } from "./types";
+import { ACTIVITIES, ALL_CATEGORIES, DEFAULT_CATEGORIES } from "./activities";
 
 export const LEVELS = [
   { level: 1, minutes: 10, name: "Chispa" },
@@ -15,17 +16,8 @@ export function levelInfo(level: number) {
   return LEVELS[Math.min(Math.max(level, 1), MAX_LEVEL) - 1];
 }
 
-export const CATEGORY_LABEL: Record<Category, string> = {
-  leer: "Leer",
-  ver: "Ver",
-  escuchar: "Escuchar",
-};
-
-export const CATEGORY_VERB: Record<Category, string> = {
-  leer: "leyendo",
-  ver: "viendo",
-  escuchar: "escuchando",
-};
+export const CATEGORY_LABEL = Object.fromEntries(ALL_CATEGORIES.map((c) => [c, ACTIVITIES[c].label])) as Record<Category, string>;
+export const CATEGORY_VERB = Object.fromEntries(ALL_CATEGORIES.map((c) => [c, ACTIVITIES[c].verb])) as Record<Category, string>;
 
 const ENERGY_FACTOR: Record<Energy, number> = { bajo: 0.5, medio: 1, alto: 1.25 };
 
@@ -61,12 +53,12 @@ export function targetMinutes(level: number, energy: Energy | undefined) {
 
 /** Qué tanto te ayuda cada categoría, según tus 👍 / 👎. */
 export function categoryWeights(sessions: Session[]): Record<Category, number> {
-  const w: Record<Category, number> = { leer: 1, ver: 1, escuchar: 1 };
+  const w = Object.fromEntries(ALL_CATEGORIES.map((c) => [c, 1])) as Record<Category, number>;
   for (const s of sessions) {
     if (s.helped === true) w[s.category] += 1;
     if (s.helped === false) w[s.category] -= 0.5;
   }
-  for (const c of Object.keys(w) as Category[]) w[c] = Math.max(0.3, w[c]);
+  for (const c of ALL_CATEGORIES) w[c] = Math.max(0.3, w[c]);
   return w;
 }
 
@@ -78,7 +70,7 @@ function seeded(seed: string) {
 
 /** Solo entre las actividades que elegiste en las preguntas iniciales, pesadas por lo que te ayudó. */
 export function pickCategory(sessions: Session[], date: string, shift = 0, allowed?: Category[]): Category {
-  const order: Category[] = allowed?.length ? allowed : ["leer", "ver", "escuchar"];
+  const order: Category[] = allowed?.length ? allowed : DEFAULT_CATEGORIES;
   const w = categoryWeights(sessions);
   const total = order.reduce((a, c) => a + w[c], 0);
   let r = seeded(date) * total;
@@ -95,7 +87,7 @@ export interface Challenge {
   title: string;
   subtitle: string;
   minutes: number;
-  planItem?: { title: string; minutes: number };
+  planItem?: { title: string; minutes: number; by?: string };
 }
 
 /** `suggestion` se usa si tu plan no tiene nada de esa categoría (una recomendación según tus gustos). */
@@ -103,7 +95,7 @@ export function buildChallenge(
   category: Category,
   minutes: number,
   plan: PlanItem[],
-  suggestion?: { title: string; minutes: number },
+  suggestion?: { title: string; minutes: number; by?: string },
 ): Challenge {
   const item = plan.find((p) => p.category === category && !p.done) ?? suggestion;
   const sub = `Sin celular · unos ${minutes} min`;
@@ -128,16 +120,46 @@ export function buildChallenge(
       subtitle: "Sin tocar el celular",
     };
   }
-  const what =
-    minutes < 15 ? "3 canciones seguidas" : minutes < 35 ? "medio álbum" : "un álbum completo";
+  if (category === "escuchar") {
+    const what =
+      minutes < 15 ? "3 canciones seguidas" : minutes < 35 ? "medio álbum" : "un álbum completo";
+    return {
+      category,
+      minutes,
+      planItem: minutes >= 35 ? item : undefined,
+      title: minutes >= 35 && item ? `Escucha ${item.title}` : `Escucha ${what}`,
+      subtitle: "Sin saltar canciones",
+    };
+  }
+  // Crear y moverte: la idea del plan o de la biblioteca, o una genérica según el tiempo.
+  const generic = GENERIC[category](minutes);
   return {
     category,
     minutes,
-    planItem: minutes >= 35 ? item : undefined,
-    title: minutes >= 35 && item ? `Escucha ${item.title}` : `Escucha ${what}`,
-    subtitle: "Sin saltar canciones",
+    planItem: item,
+    title: item?.title ?? generic.title,
+    subtitle: generic.subtitle,
   };
 }
+
+const GENERIC: Record<Exclude<Category, "leer" | "ver" | "escuchar">, (m: number) => { title: string; subtitle: string }> = {
+  escribir: (m) => ({
+    title: m < 15 ? "Escribe media página sin borrar" : m < 30 ? "Escribe una página sobre tu día" : `Escribe ${m} minutos seguidos`,
+    subtitle: "En papel, sin corregir",
+  }),
+  dibujar: (m) => ({
+    title: m < 15 ? "Dibuja algo que tengas enfrente" : m < 30 ? "Dibuja lo que ves por tu ventana" : `Dibuja o pinta ${m} minutos sin parar`,
+    subtitle: "No tiene que quedar bonito",
+  }),
+  cocinar: (m) => ({
+    title: m < 25 ? "Prepara algo simple, con calma" : m < 50 ? "Cocina una receta nueva sin prisa" : "Cocina un plato que nunca has hecho",
+    subtitle: "Celular fuera de la cocina",
+  }),
+  caminar: (m) => ({
+    title: m < 30 ? `Camina ${m} minutos sin celular ni audífonos` : `Sal a caminar ${m} minutos a un lugar con verde`,
+    subtitle: "Fíjate en 5 cosas que no habías notado",
+  }),
+};
 
 export function minutesByDay(sessions: Session[], days = 7) {
   const out: { date: string; label: string; minutes: number }[] = [];

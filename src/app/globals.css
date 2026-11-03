@@ -28,6 +28,10 @@
   --on-achievement-tint: #6b4410;
   --calm: #e4e1ee;
   --on-calm: #463f66;
+  --create-tint: #f3e1e5;
+  --on-create-tint: #6e3346;
+  --move-tint: #dce8ef;
+  --on-move-tint: #24465c;
   /* Modo foco: siempre bonsái */
   --zen: #1e3a2f;
   --zen-raised: #274c3d;
@@ -65,6 +69,10 @@
     --on-achievement-tint: #f0d3ae;
     --calm: #2a2738;
     --on-calm: #d2ccec;
+    --create-tint: #36222a;
+    --on-create-tint: #f0c9d4;
+    --move-tint: #1b2a35;
+    --on-move-tint: #c3daea;
     --zen: #15291f;
     --zen-raised: #1e3a2f;
     --zen-ring: #274c3d;
@@ -98,6 +106,10 @@
   --color-on-achievement-tint: var(--on-achievement-tint);
   --color-calm: var(--calm);
   --color-on-calm: var(--on-calm);
+  --color-create-tint: var(--create-tint);
+  --color-on-create-tint: var(--on-create-tint);
+  --color-move-tint: var(--move-tint);
+  --color-on-move-tint: var(--on-move-tint);
   --color-zen: var(--zen);
   --color-zen-raised: var(--zen-raised);
   --color-zen-ring: var(--zen-ring);
@@ -169,4 +181,11 @@ button {
   .breathe {
     animation: none;
   }
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

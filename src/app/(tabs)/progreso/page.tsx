@@ -3,7 +3,8 @@
 import { IconAward } from "@tabler/icons-react";
 import { useAppState } from "@/lib/store";
 import { CATEGORY_LABEL, LEVELS, minutesByDay, progressToNextLevel } from "@/lib/levels";
-import type { AppState, Category } from "@/lib/types";
+import type { AppState } from "@/lib/types";
+import { DEFAULT_CATEGORIES } from "@/lib/activities";
 import { CAT_STYLE, CategoryIcon, PageTitle } from "@/components/ui";
 
 function achievements(s: AppState) {
@@ -16,6 +17,10 @@ function achievements(s: AppState) {
     { id: "album", label: "Álbum completo", sub: "Sin saltar canciones", got: done.some((x) => x.category === "escuchar" && x.actualMin >= 30) },
     { id: "lector", label: "Media hora leyendo", sub: "En una sola sesión", got: done.some((x) => x.category === "leer" && x.actualMin >= 30) },
     { id: "nivel3", label: "Nivel Llama", sub: "30 minutos seguidos", got: s.level >= 3 },
+    { id: "obra", label: "Primera obra terminada", sub: "Un libro, peli o álbum completo", got: (s.finished ?? []).some((f) => f.status === "terminado") },
+    { id: "sincel", label: "Cinco sin celular", sub: "Sesiones sin tocarlo ni una vez", got: s.sessions.filter((x) => x.phone === "nada").length >= 5 },
+    { id: "crear", label: "Creaste algo", sub: "Escribir, dibujar o cocinar", got: s.sessions.some((x) => ["escribir", "dibujar", "cocinar"].includes(x.category)) },
+    { id: "caminar", label: "A caminar", sub: "Una caminata sin pantalla", got: done.some((x) => x.category === "caminar") },
     { id: "diez", label: "10 horas", sub: "De atención profunda en total", got: total >= 600 },
   ];
 }
@@ -28,13 +33,18 @@ export default function Progreso() {
   const { good, needed } = progressToNextLevel(state);
   const sessionsWeek = state.sessions.filter((s) => Date.now() - new Date(s.startedAt).getTime() < 7 * 864e5).length;
 
-  const helps = (["leer", "ver", "escuchar"] as Category[]).map((c) => {
+  const wants = state.profile?.wants.length ? state.profile.wants : DEFAULT_CATEGORIES;
+  const used = new Set(state.sessions.map((s) => s.category));
+  const helps = [...wants, ...[...used].filter((c) => !wants.includes(c))].map((c) => {
     const rated = state.sessions.filter((s) => s.category === c && s.helped !== undefined);
     const yes = rated.filter((s) => s.helped).length;
     return { c, rated: rated.length, pct: rated.length ? Math.round((yes / rated.length) * 100) : null };
   });
 
   const ach = achievements(state);
+  const phoneAnswered = state.sessions.filter((s) => s.phone);
+  const phoneFree = phoneAnswered.filter((s) => s.phone === "nada").length;
+  const finishedCount = (state.finished ?? []).filter((f) => f.status === "terminado").length;
 
   return (
     <div className="fade-in">
@@ -53,6 +63,24 @@ export default function Progreso() {
           <p className="font-serif text-[32px] leading-10">{sessionsWeek}</p>
         </div>
       </div>
+
+      {(phoneAnswered.length > 0 || finishedCount > 0) && (
+        <div className="mb-3 grid grid-cols-2 gap-3">
+          <div className="rounded-[24px] bg-surface p-4">
+            <p className="text-[12px] text-ink-soft">Sin tocar el celular</p>
+            <p className="font-serif text-[32px] leading-10">
+              {phoneAnswered.length ? Math.round((phoneFree / phoneAnswered.length) * 100) : 0}
+              <span className="text-[15px] text-ink-soft">%</span>
+            </p>
+            <p className="text-[11px] text-ink-faint">de {phoneAnswered.length} sesiones</p>
+          </div>
+          <div className="rounded-[24px] bg-surface p-4">
+            <p className="text-[12px] text-ink-soft">Obras terminadas</p>
+            <p className="font-serif text-[32px] leading-10">{finishedCount}</p>
+            <p className="text-[11px] text-ink-faint">libros, pelis y álbumes</p>
+          </div>
+        </div>
+      )}
 
       <section className="mb-3 rounded-[28px] bg-surface p-5">
         <p className="mb-4 text-[12px] font-medium tracking-[0.02em] text-ink-soft">Atención profunda por día</p>

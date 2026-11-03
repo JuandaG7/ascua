@@ -7,6 +7,7 @@ import { IconArrowsShuffle, IconCheck, IconPlayerPlay, IconSettings, IconWind } 
 import { getState, setState, today, useAppState } from "@/lib/store";
 import { recommendedFor } from "@/lib/catalog";
 import { goalLabel } from "@/lib/profile";
+import { focusHref } from "@/lib/focus";
 import {
   CATEGORY_LABEL,
   buildChallenge,
@@ -31,10 +32,6 @@ const ENERGY_NOTE: Record<Energy, string> = {
   alto: "Buen día para estirarte un poquito más.",
 };
 
-function focusHref(c: { category: string; minutes: number; title: string }) {
-  const q = new URLSearchParams({ cat: c.category, min: String(c.minutes), title: c.title });
-  return `/foco?${q}`;
-}
 
 export default function Home() {
   const state = useAppState();
@@ -51,8 +48,9 @@ export default function Home() {
 
   const category = pickCategory(state.sessions, date, shift, state.profile?.wants);
   const minutes = targetMinutes(state.level, energy);
-  const suggestion = recommendedFor(state.level, state.profile).find((c) => c.category === category);
+  const suggestion = recommendedFor(state.level, state.profile, state.finished).find((c) => c.category === category);
   const challenge = buildChallenge(category, minutes, state.plan, suggestion);
+  const challengeHref = focusHref({ ...challenge, work: challenge.planItem?.title, by: challenge.planItem?.by });
   const goal = goalLabel(state.profile);
   const lvl = levelInfo(state.level);
   const { good, needed } = progressToNextLevel(state);
@@ -133,14 +131,14 @@ export default function Home() {
           </div>
         ) : (
           <Link
-            href={focusHref(challenge)}
+            href={challengeHref}
             className="flex h-[52px] items-center justify-center gap-2 rounded-full bg-energy text-[15px] font-semibold text-on-energy transition-colors duration-300 hover:bg-energy-hover"
           >
             <IconPlayerPlay size={18} stroke={2} aria-hidden /> Empezar
           </Link>
         )}
         {doneToday && (
-          <Link href={focusHref(challenge)} className="mt-3 block text-center text-[13px] font-medium underline-offset-4 hover:underline">
+          <Link href={challengeHref} className="mt-3 block text-center text-[13px] font-medium underline-offset-4 hover:underline">
             Hacer otra sesión
           </Link>
         )}
@@ -190,7 +188,7 @@ export default function Home() {
             {pendingPlan.slice(0, 4).map((p) => (
               <li key={p.id}>
                 <Link
-                  href={focusHref({ category: p.category, minutes: p.minutes, title: p.title })}
+                  href={focusHref({ category: p.category, minutes: p.minutes, title: p.title, work: p.title, by: p.by })}
                   className={`flex items-center gap-3 rounded-[20px] px-4 py-3 ${CAT_STYLE[p.category]}`}
                 >
                   <CategoryIcon category={p.category} />

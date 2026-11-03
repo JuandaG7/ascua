@@ -9,7 +9,7 @@ import { MissingKeyError, streamReply } from "@/lib/chat";
 import type { Category, ChatMessage } from "@/lib/types";
 import { CAT_STYLE, CategoryIcon, PageTitle } from "@/components/ui";
 
-const TAG = /\[\[plan\|(leer|ver|escuchar)\|([^|\]]+)\|([^|\]]*)\|([^|\]]*)\|(\d+)\]\]/g;
+const TAG = /\[\[plan\|(leer|ver|escuchar|escribir|dibujar|cocinar|caminar)\|([^|\]]+)\|([^|\]]*)\|([^|\]]*)\|(\d+)\]\]/g;
 
 function parse(content: string): { text: string; recs: PlanInput[] } {
   const recs: PlanInput[] = [];

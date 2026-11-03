@@ -30,6 +30,10 @@ colors:
     on-achievement-tint: '#6B4410'
     calm: '#E4E1EE'            # Lavanda niebla: chat y diario de voz
     on-calm: '#463F66'
+    create-tint: '#F3E1E5'     # Rosa empolvado: actividades de crear
+    on-create-tint: '#6E3346'
+    move-tint: '#DCE8EF'       # Azul niebla de río: moverte
+    on-move-tint: '#24465C'
   dark:
     canvas: '#121915'
     surface: '#1A231E'
@@ -55,12 +59,19 @@ colors:
     on-achievement-tint: '#F0D3AE'
     calm: '#2A2738'
     on-calm: '#D2CCEB'
+    create-tint: '#36222A'
+    on-create-tint: '#F0C9D4'
+    move-tint: '#1B2A35'
+    on-move-tint: '#C3DAEA'
 categories:
   # Cada actividad tiene un color fijo (tint de fondo + texto oscuro de la misma familia)
   leer: achievement-tint / on-achievement-tint
   ver: energy-tint / on-energy-tint
   escuchar: focus-tint / on-focus-tint
   hablar: calm / on-calm
+  # Crear y moverte usan un color por grupo para que la paleta no se llene
+  escribir, dibujar, cocinar: create-tint / on-create-tint
+  caminar: move-tint / on-move-tint
 typography:
   display:     { fontFamily: Newsreader, fontSize: 40px, fontWeight: '400', lineHeight: 48px, letterSpacing: -0.02em }
   headline-lg: { fontFamily: Newsreader, fontSize: 28px, fontWeight: '400', lineHeight: 36px, letterSpacing: -0.01em }

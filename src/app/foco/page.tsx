@@ -3,27 +3,60 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import {
-  IconArrowLeft,
-  IconMinus,
-  IconPlayerPause,
-  IconPlayerPlay,
-  IconPlus,
-  IconThumbDown,
-  IconThumbUp,
-} from "@tabler/icons-react";
+import { IconArrowLeft, IconMinus, IconPlayerPause, IconPlayerPlay, IconPlus } from "@tabler/icons-react";
 import { getState, setState, uid } from "@/lib/store";
 import { CATEGORY_VERB, evaluateLevel, levelInfo } from "@/lib/levels";
 import { focusTip } from "@/lib/profile";
-import type { Category } from "@/lib/types";
+import { ACTIVITIES, isWork } from "@/lib/activities";
+import { PHONE_OPTIONS, RATING_OPTIONS, saveFinished } from "@/lib/works";
+import type { Category, FinishedWork, PhoneUse, Rating } from "@/lib/types";
 
 type Phase = "listo" | "corriendo" | "terminado";
 
-const TIPS: Record<Category, string> = {
-  leer: "Deja el celular boca abajo, lejos de ti. Si te distraes, vuelve a la última línea.",
-  ver: "Celular en otra habitación o boca abajo. Nada de segunda pantalla.",
-  escuchar: "Ponte cómodo y no hagas nada más. Solo escucha. Sin saltar canciones.",
-};
+/** Una pregunta con respuestas en píldoras; la elegida queda marcada. */
+function Ask<T extends string>({
+  q,
+  options,
+  value,
+  onPick,
+}: {
+  q: string;
+  options: { value: T; label: string }[];
+  value?: T;
+  onPick: (v: T) => void;
+}) {
+  return (
+    <div className="fade-in mb-5">
+      <p className="mb-2 text-[14px] text-zen-soft">{q}</p>
+      <div className="flex gap-2" role="radiogroup" aria-label={q}>
+        {options.map((o) => (
+          <button
+            key={o.value}
+            role="radio"
+            aria-checked={value === o.value}
+            onClick={() => onPick(o.value)}
+            className={`h-12 flex-1 rounded-full px-2 text-[13px] font-medium transition-colors duration-300 ${
+              value === o.value ? "bg-zen-ink text-zen" : "bg-zen-raised text-zen-ink"
+            }`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const HELPED = [
+  { value: "no", label: "No mucho" },
+  { value: "si", label: "Sí" },
+] as const;
+
+const STATUS = [
+  { value: "sigo", label: "Todavía no" },
+  { value: "terminado", label: "Sí, lo terminé" },
+  { value: "dejado", label: "Lo dejé" },
+] as const;
 
 function chime() {
   try {
@@ -52,6 +85,9 @@ function Focus() {
   const router = useRouter();
   const category = (params.get("cat") as Category) || "leer";
   const title = params.get("title") || "Sesión de foco";
+  // La obra de esta sesión (libro, película o álbum), si viene del plan o de una recomendación.
+  const work = isWork(category) ? (params.get("work") ?? undefined) : undefined;
+  const workBy = params.get("by") ?? undefined;
   const [planned, setPlanned] = useState(() => Math.max(5, Number(params.get("min")) || 20));
 
   const [phase, setPhase] = useState<Phase>("listo");
@@ -62,7 +98,10 @@ function Focus() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
   const [leveledUp, setLeveledUp] = useState<number | null>(null);
-  const [answered, setAnswered] = useState(false);
+  const [helped, setHelped] = useState<"si" | "no">();
+  const [phone, setPhone] = useState<PhoneUse>();
+  const [status, setStatus] = useState<"sigo" | FinishedWork["status"]>();
+  const [rating, setRating] = useState<Rating>();
   const [tip, setTip] = useState<string>();
   useEffect(() => setTip(focusTip(getState().profile)), []);
 
@@ -88,6 +127,7 @@ function Focus() {
               plannedMin: planned,
               actualMin,
               completed: done,
+              work,
             },
           ],
         };
@@ -102,7 +142,7 @@ function Focus() {
       setPhase("terminado");
       if (done) chime();
     },
-    [category, planned, title, total],
+    [category, planned, title, total, work],
   );
 
   useEffect(() => {
@@ -148,12 +188,21 @@ function Focus() {
     setPaused(!paused);
   };
 
-  const answer = (helped: boolean) => {
+  const updateSession = (patch: { helped?: boolean; phone?: PhoneUse }) =>
     setState((s) => ({
       ...s,
-      sessions: s.sessions.map((x) => (x.id === sessionId ? { ...x, helped } : x)),
+      sessions: s.sessions.map((x) => (x.id === sessionId ? { ...x, ...patch } : x)),
     }));
-    setAnswered(true);
+
+  const pickStatus = (v: "sigo" | FinishedWork["status"]) => {
+    setStatus(v);
+    if (v !== "sigo" && work && isWork(category)) saveFinished({ category, title: work, by: workBy, status: v, rating, phone });
+  };
+
+  const pickRating = (v: Rating) => {
+    setRating(v);
+    if (status && status !== "sigo" && work && isWork(category))
+      saveFinished({ category, title: work, by: workBy, status, rating: v, phone });
   };
 
   const remaining = Math.max(0, total - elapsed);
@@ -200,7 +249,7 @@ function Focus() {
                   <IconPlus size={18} />
                 </button>
               </div>
-              <p className="mt-8 max-w-xs text-[14px] leading-6 text-zen-soft">{TIPS[category]}</p>
+              <p className="mt-8 max-w-xs text-[14px] leading-6 text-zen-soft">{ACTIVITIES[category].tip}</p>
               {tip && <p className="mt-3 max-w-xs text-[14px] leading-6 text-zen-ink">{tip}</p>}
             </div>
             <button
@@ -267,7 +316,7 @@ function Focus() {
         )}
 
         {phase === "terminado" && (
-          <div className="fade-in flex flex-1 flex-col items-center justify-center text-center">
+          <div className="fade-in flex flex-1 flex-col items-center justify-center pt-6 text-center">
             <div
               className={`grid size-28 place-items-center rounded-full ${completed ? "glow bg-achievement" : "bg-zen-raised"}`}
             >
@@ -294,28 +343,34 @@ function Focus() {
               </div>
             )}
 
-            <div className="mt-10 w-full">
-              {!answered ? (
-                <>
-                  <p className="mb-3 text-[14px] text-zen-soft">¿Te ayudó a sentirte mejor?</p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => answer(false)}
-                      className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-zen-raised text-[14px] font-medium"
-                    >
-                      <IconThumbDown size={18} stroke={1.6} /> No mucho
-                    </button>
-                    <button
-                      onClick={() => answer(true)}
-                      className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-zen-raised text-[14px] font-medium"
-                    >
-                      <IconThumbUp size={18} stroke={1.6} /> Sí
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <p className="fade-in mb-3 text-[14px] text-zen-soft">Anotado. Así aprendo qué te funciona.</p>
+            <div className="mt-8 w-full text-left">
+              <Ask
+                q="¿Te ayudó a sentirte mejor?"
+                options={[...HELPED]}
+                value={helped}
+                onPick={(v) => {
+                  setHelped(v);
+                  updateSession({ helped: v === "si" });
+                }}
+              />
+              <Ask
+                q="¿Agarraste el celular?"
+                options={PHONE_OPTIONS}
+                value={phone}
+                onPick={(v) => {
+                  setPhone(v);
+                  updateSession({ phone: v });
+                  if (status && status !== "sigo" && work && isWork(category))
+                    saveFinished({ category, title: work, by: workBy, status, rating, phone: v });
+                }}
+              />
+              {work && (
+                <Ask q={`¿Terminaste ${work}?`} options={[...STATUS]} value={status} onPick={pickStatus} />
               )}
+              {work && status && status !== "sigo" && (
+                <Ask q="¿Qué te pareció?" options={RATING_OPTIONS} value={rating} onPick={pickRating} />
+              )}
+              {(helped || phone) && <p className="fade-in mb-1 text-center text-[13px] text-zen-soft">Anotado. Así aprendo qué te funciona.</p>}
               <button
                 onClick={() => router.push("/")}
                 className="mt-3 h-[52px] w-full rounded-full bg-zen-ink text-[15px] font-semibold text-zen"

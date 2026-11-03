@@ -1,17 +1,32 @@
 import type { Category } from "@/lib/types";
-import { IconBook2, IconDeviceTv, IconHeadphones } from "@tabler/icons-react";
+import { ACTIVITIES } from "@/lib/activities";
+import {
+  IconBook2,
+  IconBrush,
+  IconDeviceTv,
+  IconHeadphones,
+  IconPencil,
+  IconToolsKitchen2,
+  IconWalk,
+} from "@tabler/icons-react";
 
-export const CAT_STYLE: Record<Category, string> = {
-  leer: "bg-achievement-tint text-on-achievement-tint",
-  ver: "bg-energy-tint text-on-energy-tint",
-  escuchar: "bg-focus-tint text-on-focus-tint",
-};
+export const CAT_STYLE = Object.fromEntries(
+  Object.entries(ACTIVITIES).map(([k, a]) => [k, a.color]),
+) as Record<Category, string>;
+
+const ICONS = {
+  leer: IconBook2,
+  ver: IconDeviceTv,
+  escuchar: IconHeadphones,
+  escribir: IconPencil,
+  dibujar: IconBrush,
+  cocinar: IconToolsKitchen2,
+  caminar: IconWalk,
+} satisfies Record<Category, unknown>;
 
 export function CategoryIcon({ category, size = 18 }: { category: Category; size?: number }) {
-  const props = { size, stroke: 1.6, "aria-hidden": true };
-  if (category === "leer") return <IconBook2 {...props} />;
-  if (category === "ver") return <IconDeviceTv {...props} />;
-  return <IconHeadphones {...props} />;
+  const Icon = ICONS[category];
+  return <Icon size={size} stroke={1.6} aria-hidden />;
 }
 
 export function PageTitle({ children, sub }: { children: React.ReactNode; sub?: React.ReactNode }) {
