@@ -6,8 +6,8 @@ const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Brasa",
-    short_name: "Brasa",
+    name: "Ascua",
+    short_name: "Ascua",
     description: "Recupera tu atención y tu energía, un poco cada día.",
     start_url: `${base}/`,
     scope: `${base}/`,

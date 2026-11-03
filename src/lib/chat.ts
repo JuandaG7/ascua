@@ -3,11 +3,12 @@ import { getState, today } from "./store";
 import { levelInfo } from "./levels";
 import type { ChatMessage } from "./types";
 
-const KEY_STORAGE = "brasa:anthropic-key";
+const KEY_STORAGE = "ascua:anthropic-key";
+const OLD_KEY_STORAGE = "brasa:anthropic-key"; // nombre anterior de la app
 
 export function getApiKey(): string {
   try {
-    return localStorage.getItem(KEY_STORAGE) ?? "";
+    return localStorage.getItem(KEY_STORAGE) ?? localStorage.getItem(OLD_KEY_STORAGE) ?? "";
   } catch {
     return "";
   }
@@ -15,6 +16,7 @@ export function getApiKey(): string {
 
 export function setApiKey(key: string) {
   try {
+    localStorage.removeItem(OLD_KEY_STORAGE);
     if (key) localStorage.setItem(KEY_STORAGE, key.trim());
     else localStorage.removeItem(KEY_STORAGE);
   } catch {
@@ -22,7 +24,7 @@ export function setApiKey(key: string) {
   }
 }
 
-const BASE_PROMPT = `Eres el compañero de lectura, cine y música dentro de Brasa, una app personal para recuperar la capacidad de atención y la energía. La persona siente que el scroll y el contenido corto le dejaron el "cerebro podrido" y está entrenando su atención poco a poco, con niveles.
+const BASE_PROMPT = `Eres el compañero de lectura, cine y música dentro de Ascua, una app personal para recuperar la capacidad de atención y la energía. La persona siente que el scroll y el contenido corto le dejaron el "cerebro podrido" y está entrenando su atención poco a poco, con niveles.
 
 Cómo responder:
 - En español, cálido y directo, como un amigo que sabe mucho de libros, películas y música. Respuestas cortas para leer en el celular: 2 a 5 frases normalmente.

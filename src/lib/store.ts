@@ -3,7 +3,8 @@
 import { useSyncExternalStore } from "react";
 import type { AppState } from "./types";
 
-const KEY = "brasa:v1";
+const KEY = "ascua:v1";
+const OLD_KEY = "brasa:v1"; // nombre anterior de la app
 
 const initialState: AppState = {
   version: 1,
@@ -22,7 +23,7 @@ function load() {
   if (loaded || typeof window === "undefined") return;
   loaded = true;
   try {
-    const raw = window.localStorage.getItem(KEY);
+    const raw = window.localStorage.getItem(KEY) ?? window.localStorage.getItem(OLD_KEY);
     if (raw) state = { ...initialState, ...JSON.parse(raw) };
   } catch {
     // Sin almacenamiento disponible: la app funciona en memoria.

@@ -1,6 +1,6 @@
 // Permite abrir la app sin internet. Busca primero la versión nueva en la red
 // (así los cambios subidos a GitHub llegan solos) y si no hay red usa la copia guardada.
-const CACHE = "brasa-v1";
+const CACHE = "ascua-v1";
 const BASE = new URL(self.registration.scope).pathname;
 
 self.addEventListener("install", (e) => {

@@ -18,9 +18,9 @@ const jakarta = Plus_Jakarta_Sans({
 const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 export const metadata: Metadata = {
-  title: "Brasa",
+  title: "Ascua",
   description: "Recupera tu atención y tu energía, un poco cada día.",
-  appleWebApp: { capable: true, title: "Brasa", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Ascua", statusBarStyle: "default" },
   icons: { apple: `${base}/icons/icon-180.png` },
 };
 

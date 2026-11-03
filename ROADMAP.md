@@ -1,4 +1,4 @@
-# Roadmap de Brasa
+# Roadmap de Ascua
 
 Estado actual (v1.1): check-in de energía, reto diario por nivel, modo foco, niveles, biblioteca con 23 recomendaciones, chat con Claude, diario de voz local, progreso, ajustes y copias de seguridad. Todo guardado en el teléfono.
 

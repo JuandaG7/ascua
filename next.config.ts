@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
-// Se publica en GitHub Pages como https://juandag7.github.io/brasa/
-const basePath = process.env.NODE_ENV === "production" ? "/brasa" : "";
+// Se publica en GitHub Pages como https://juandag7.github.io/ascua/
+const basePath = process.env.NODE_ENV === "production" ? "/ascua" : "";
 
 const nextConfig: NextConfig = {
   output: "export",

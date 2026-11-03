@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logo al óleo · opciones</title>
+<style>
+  body { margin: 0; background: #F5F7F4; color: #1C2420; font-family: system-ui, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; }
+  figure { margin: 0; }
+  .big { width: 100%; aspect-ratio: 1; border-radius: 22%; display: block; }
+  figcaption { margin-top: 10px; font-size: 15px; font-weight: 600; }
+  figcaption span { display: block; font-weight: 400; font-size: 13px; color: #5A6B61; margin-top: 2px; }
+  .small { display: flex; gap: 12px; align-items: end; margin-top: 10px; }
+  .small img { width: 60px; border-radius: 22%; } .small img.xs { width: 40px; }
+  #work { position: absolute; left: -9999px; }
+</style>
+</head>
+<body>
+<main><div class="grid" id="grid"></div></main>
+
+<svg id="work" width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <path id="flame" d="M256 104c34 46 76 78 76 132a76 76 0 0 1-152 0c0-32 18-52 34-70 4 26 18 40 34 44-10-40 0-74 8-106z"/>
+  <path id="inner" d="M258 168c18 28 40 48 40 80a42 42 0 0 1-84 0c0-18 10-30 18-40 4 14 10 22 20 24-6-22-2-44 6-64z"/>
+  <circle id="core" cx="256" cy="250" r="28"/>
+  <path id="wave" d="M96 352c56-26 108-26 160 0s104 26 160 0" fill="none" stroke="#000" stroke-width="30" stroke-linecap="round"/>
+</svg>
+
+<script>
+// Cada logo se pinta con cientos de pinceladas cortas: cada una con su dirección,
+// grosor y un color levemente distinto. Encima va un relieve de pintura y textura de lienzo.
+
+function rng(seed) {
+  return () => {
+    seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function hexToHsl(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0; const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h *= 60;
+  }
+  return [h, s * 100, l * 100];
+}
+const hsl = (h, s, l) => `hsl(${h.toFixed(1)} ${Math.max(0, Math.min(100, s)).toFixed(1)}% ${Math.max(0, Math.min(100, l)).toFixed(1)}%)`;
+
+const work = document.getElementById("work");
+const shapes = {
+  flame: work.querySelector("#flame"),
+  inner: work.querySelector("#inner"),
+  core: work.querySelector("#core"),
+  wave: work.querySelector("#wave"),
+};
+const P = work.createSVGPoint();
+const inside = (el, x, y, stroke) => { P.x = x; P.y = y; return stroke ? el.isPointInStroke(P) : el.isPointInFill(P); };
+
+function strokesFor(o, layer, rand) {
+  const out = [];
+  const [h0, s0, l0] = hexToHsl(layer.color);
+  for (let i = 0; i < layer.count; i++) {
+    let x, y, tries = 0;
+    do { x = layer.box[0] + rand() * layer.box[2]; y = layer.box[1] + rand() * layer.box[3]; tries++; }
+    while (layer.shape && !inside(shapes[layer.shape], x, y, layer.shape === "wave") && tries < 40);
+    if (tries >= 40) continue;
+
+    const a = layer.angle(x, y, rand);
+    const len = layer.len[0] + rand() * (layer.len[1] - layer.len[0]);
+    const w = layer.width[0] + rand() * (layer.width[1] - layer.width[0]);
+    const dx = Math.cos(a) * len / 2, dy = Math.sin(a) * len / 2;
+    const bend = (rand() - 0.5) * len * o.bend;
+    const cx = x - Math.sin(a) * bend, cy = y + Math.cos(a) * bend;
+    const d = `M${(x - dx).toFixed(1)} ${(y - dy).toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${(x + dx).toFixed(1)} ${(y + dy).toFixed(1)}`;
+    const j = layer.jitter ?? o.jitter;
+    const c = hsl(h0 + (rand() - 0.5) * j[0], s0 + (rand() - 0.5) * j[1], l0 + (rand() - 0.5) * j[2]);
+    out.push(`<path d="${d}" stroke="${c}" stroke-width="${w.toFixed(1)}" opacity="${o.opacity}"/>`);
+    if (rand() < o.ridge) {
+      // Borde iluminado de la pincelada (pintura gruesa)
+      const hl = hsl(h0, s0 - 6, l0 + o.ridgeLight);
+      out.push(`<path d="${d}" transform="translate(-1.4 -1.6)" stroke="${hl}" stroke-width="${(w * 0.22).toFixed(1)}" opacity="0.55"/>`);
+    }
+  }
+  return out.join("");
+}
+
+const horiz = (tilt) => (x, y, r) => (r() - 0.5) * tilt;
+const towardTip = (tx, ty, spread) => (x, y, r) => Math.atan2(ty - y, tx - x) + (r() - 0.5) * spread;
+const swirl = (cx, cy) => (x, y, r) => Math.atan2(y - cy, x - cx) + Math.PI / 2 + Math.sin(x / 40) * 0.6 + (r() - 0.5) * 0.5;
+const waveDir = (spread) => (x, y, r) => -Math.cos(((x - 96) / 160) * Math.PI) * 0.33 + (r() - 0.5) * spread;
+
+const OPTIONS = [
+  {
+    id: "impasto", edge: 8, seed: 7,
+    name: "1 · Impasto nocturno",
+    sub: "Pintura gruesa, pinceladas marcadas. El más fiel al logo actual.",
+    cap: "round", bend: 0.25, opacity: 1, ridge: 0.65, ridgeLight: 16, jitter: [10, 14, 10],
+    relief: 3.2, canvas: 0.08,
+    layers: [
+      { color: "#1E3A2F", count: 1100, box: [-20, -20, 552, 552], angle: horiz(0.25), len: [30, 70], width: [12, 22], jitter: [12, 16, 9] },
+      { shape: "wave", color: "#7FBFAA", count: 380, box: [70, 300, 372, 90], angle: waveDir(0.25), len: [16, 34], width: [7, 12] },
+      { shape: "flame", color: "#E89A7C", count: 520, box: [170, 95, 172, 230], angle: towardTip(256, 96, 0.5), len: [18, 38], width: [7, 13] },
+      { shape: "inner", color: "#F2B48E", count: 260, box: [205, 160, 100, 135], angle: towardTip(258, 150, 0.6), len: [12, 26], width: [6, 10] },
+      { shape: "core", color: "#E9C48F", count: 110, box: [226, 220, 60, 60], angle: horiz(6), len: [8, 16], width: [6, 9], jitter: [8, 10, 10] },
+    ],
+  },
+  {
+    id: "suave", edge: 6, seed: 21,
+    name: "2 · Óleo suave sobre crema",
+    sub: "Fondo claro y pinceladas finas y fundidas. Más calmado y luminoso.",
+    cap: "round", bend: 0.2, opacity: 0.78, ridge: 0.25, ridgeLight: 7, jitter: [8, 10, 7],
+    relief: 1.4, canvas: 0.12,
+    layers: [
+      { color: "#F1E9DD", count: 1200, box: [-20, -20, 552, 552], angle: horiz(0.18), len: [40, 90], width: [10, 18], jitter: [10, 14, 5] },
+      { shape: "wave", color: "#6E9C88", count: 420, box: [70, 300, 372, 90], angle: waveDir(0.2), len: [18, 36], width: [5, 9] },
+      { shape: "flame", color: "#C9694A", count: 650, box: [170, 95, 172, 230], angle: towardTip(256, 96, 0.4), len: [18, 40], width: [5, 9] },
+      { shape: "inner", color: "#E0906D", count: 320, box: [205, 160, 100, 135], angle: towardTip(258, 150, 0.5), len: [12, 26], width: [4, 8] },
+      { shape: "core", color: "#DDB175", count: 140, box: [226, 220, 60, 60], angle: horiz(6), len: [8, 16], width: [4, 7] },
+    ],
+  },
+  {
+    id: "remolino", edge: 12, seed: 33,
+    name: "3 · Expresivo, con remolinos",
+    sub: "Las pinceladas giran alrededor del fuego. Más artístico, con movimiento.",
+    cap: "round", bend: 0.6, opacity: 1, ridge: 0.5, ridgeLight: 14, jitter: [14, 18, 12],
+    relief: 2.6, canvas: 0.08,
+    layers: [
+      { color: "#1B3529", count: 1000, box: [-20, -20, 552, 552], angle: swirl(256, 240), len: [40, 90], width: [9, 16], jitter: [16, 20, 12] },
+      { color: "#2F5A49", count: 260, box: [-20, -20, 552, 552], angle: swirl(256, 240), len: [30, 70], width: [4, 7], jitter: [12, 16, 10] },
+      { shape: "wave", color: "#6FB59D", count: 380, box: [70, 300, 372, 90], angle: waveDir(0.5), len: [18, 40], width: [6, 11] },
+      { shape: "flame", color: "#E8875F", count: 560, box: [170, 95, 172, 230], angle: towardTip(256, 90, 1.0), len: [20, 44], width: [6, 12], jitter: [20, 16, 12] },
+      { shape: "inner", color: "#F0B070", count: 280, box: [205, 160, 100, 135], angle: towardTip(258, 150, 1.0), len: [14, 30], width: [5, 9] },
+      { shape: "core", color: "#F2D08E", count: 130, box: [226, 220, 60, 60], angle: swirl(256, 250), len: [10, 20], width: [5, 8] },
+    ],
+  },
+  {
+    id: "espatula", edge: 6, seed: 48,
+    name: "4 · Espátula",
+    sub: "Pocas pinceladas anchas y planas. Más gráfico; se lee mejor en pequeño.",
+    cap: "butt", bend: 0.05, opacity: 1, ridge: 0.8, ridgeLight: 12, jitter: [8, 12, 9],
+    relief: 2.2, canvas: 0.06,
+    layers: [
+      { color: "#1E3A2F", count: 260, box: [-30, -30, 572, 572], angle: horiz(0.5), len: [60, 130], width: [26, 44], jitter: [12, 16, 10] },
+      { shape: "wave", color: "#82C2AC", count: 110, box: [70, 300, 372, 90], angle: waveDir(0.15), len: [24, 46], width: [12, 18] },
+      { shape: "flame", color: "#E3896A", count: 150, box: [170, 95, 172, 230], angle: towardTip(256, 96, 0.3), len: [26, 50], width: [12, 20] },
+      { shape: "inner", color: "#EFA883", count: 70, box: [205, 160, 100, 135], angle: towardTip(258, 150, 0.4), len: [18, 34], width: [10, 15] },
+      { shape: "core", color: "#E6C08C", count: 34, box: [226, 220, 60, 60], angle: horiz(4), len: [14, 22], width: [10, 14] },
+    ],
+  },
+];
+
+const SHAPE_D = {
+  flame: shapes.flame.getAttribute("d"),
+  inner: shapes.inner.getAttribute("d"),
+  wave: shapes.wave.getAttribute("d"),
+};
+
+// Silueta de cada capa, un poco más ancha, para que las pinceladas no se salgan y la forma se lea.
+function shapeMarkup(name, extra, fill) {
+  if (name === "core") return `<circle cx="256" cy="250" r="${28 + extra / 2}" fill="${fill}"/>`;
+  if (name === "wave") return `<path d="${SHAPE_D.wave}" fill="none" stroke="${fill}" stroke-width="${30 + extra}" stroke-linecap="round"/>`;
+  return `<path d="${SHAPE_D[name]}" fill="${fill}" stroke="${fill}" stroke-width="${extra}" stroke-linejoin="round"/>`;
+}
+
+function paint(o) {
+  const rand = rng(o.seed);
+  const masks = [];
+  const body = o.layers.map((l, i) => {
+    const strokes = `<g fill="none" stroke-linecap="${o.cap}">${strokesFor(o, l, rand)}</g>`;
+    if (!l.shape) return `<rect x="-20" y="-20" width="552" height="552" fill="${l.color}"/>${strokes}`;
+    masks.push(`<mask id="m${i}">${shapeMarkup(l.shape, o.edge, "#fff")}</mask>`);
+    return `<g mask="url(#m${i})">${shapeMarkup(l.shape, 0, l.color)}${strokes}</g>`;
+  }).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <filter id="oil" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="0.6" result="soft"/>
+      <feColorMatrix in="soft" type="luminanceToAlpha" result="lum"/>
+      <feDiffuseLighting in="lum" surfaceScale="${o.relief}" diffuseConstant="1.15" lighting-color="#fff" result="light"><feDistantLight azimuth="225" elevation="52"/></feDiffuseLighting>
+      <feComposite in="soft" in2="light" operator="arithmetic" k1="0.9" k2="0.18" result="lit"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="5" result="grain"/>
+      <feDiffuseLighting in="grain" surfaceScale="0.7" diffuseConstant="1" lighting-color="#fff" result="cloth"><feDistantLight azimuth="225" elevation="65"/></feDiffuseLighting>
+      <feComposite in="lit" in2="cloth" operator="arithmetic" k1="${1 - o.canvas}" k2="${o.canvas}" result="out"/>
+      <feComposite in="out" in2="SourceGraphic" operator="in"/>
+    </filter>
+    <clipPath id="c"><rect width="512" height="512" rx="112"/></clipPath>
+    ${masks.join("")}
+  </defs>
+  <g clip-path="url(#c)"><g filter="url(#oil)">${body}</g></g>
+</svg>`;
+}
+
+const grid = document.getElementById("grid");
+window.LOGOS = {};
+for (const o of OPTIONS) {
+  const markup = paint(o);
+  window.LOGOS[o.id] = markup;
+  const url = URL.createObjectURL(new Blob([markup], { type: "image/svg+xml" }));
+  grid.insertAdjacentHTML("beforeend", `
+    <figure id="${o.id}">
+      <img class="big" src="${url}" alt="${o.name}">
+      <figcaption>${o.name}<span>${o.sub}</span></figcaption>
+      <div class="small"><img src="${url}" alt=""><img class="xs" src="${url}" alt=""></div>
+    </figure>`);
+}
+</script>
+</body>
+</html>

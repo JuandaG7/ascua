@@ -1,4 +1,4 @@
-# Brasa
+# Ascua
 
 App web para recuperar la atención y la energía, un poco cada día. Todo se guarda **en el teléfono** (localStorage e IndexedDB). No hay servidor ni cuentas.
 
@@ -23,7 +23,7 @@ La app es estática, así que el chat llama a Anthropic directo desde el teléfo
 
 Se publica sola con GitHub Actions ([.github/workflows/pages.yml](.github/workflows/pages.yml)) cada vez que se sube algo a `main`. En GitHub, **Settings → Pages → Source** debe estar en **GitHub Actions**.
 
-Queda en `https://juandag7.github.io/brasa/`.
+Queda en `https://juandag7.github.io/ascua/`.
 
 Para probar en el Mac:
 

@@ -4,7 +4,7 @@ import { LIST_KEY, audioKey, type Recording } from "./voice";
 import type { AppState } from "./types";
 
 interface Backup {
-  app: "brasa";
+  app: "ascua" | "brasa"; // "brasa" = copias hechas antes del cambio de nombre
   version: 1;
   createdAt: string;
   state: AppState;
@@ -29,7 +29,7 @@ function base64ToBlob(data: string, type: string) {
 
 /** Crea la copia y la entrega para guardar o compartir (en el iPhone abre "Compartir"). */
 export async function exportBackup(includeVoice: boolean) {
-  const backup: Backup = { app: "brasa", version: 1, createdAt: new Date().toISOString(), state: getState() };
+  const backup: Backup = { app: "ascua", version: 1, createdAt: new Date().toISOString(), state: getState() };
   if (includeVoice) {
     const list = (await get<Recording[]>(LIST_KEY)) ?? [];
     backup.recordings = [];
@@ -38,14 +38,14 @@ export async function exportBackup(includeVoice: boolean) {
       if (blob) backup.recordings.push({ ...r, data: await blobToBase64(blob) });
     }
   }
-  const name = `brasa-copia-${backup.createdAt.slice(0, 10)}.json`;
+  const name = `ascua-copia-${backup.createdAt.slice(0, 10)}.json`;
   const file = new File([JSON.stringify(backup)], name, { type: "application/json" });
 
   const markDone = () => setState((s) => ({ ...s, lastBackupAt: backup.createdAt }));
 
   if (navigator.canShare?.({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], title: "Copia de Brasa" });
+      await navigator.share({ files: [file], title: "Copia de Ascua" });
       markDone();
       return;
     } catch (e) {
@@ -67,10 +67,10 @@ export async function importBackup(file: File): Promise<number> {
   try {
     data = JSON.parse(await file.text());
   } catch {
-    throw new Error("Ese archivo no es una copia de Brasa.");
+    throw new Error("Ese archivo no es una copia de Ascua.");
   }
-  if (data?.app !== "brasa" || !data.state || !Array.isArray(data.state.sessions)) {
-    throw new Error("Ese archivo no es una copia de Brasa.");
+  if ((data?.app !== "ascua" && data?.app !== "brasa") || !data.state || !Array.isArray(data.state.sessions)) {
+    throw new Error("Ese archivo no es una copia de Ascua.");
   }
   if (data.recordings) {
     const metas: Recording[] = [];
