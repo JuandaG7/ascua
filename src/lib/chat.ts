@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getState, today } from "./store";
 import { levelInfo } from "./levels";
+import { profileForChat } from "./profile";
 import type { ChatMessage } from "./types";
 
 const KEY_STORAGE = "ascua:anthropic-key";
@@ -29,7 +30,7 @@ const BASE_PROMPT = `Eres el compañero de lectura, cine y música dentro de Asc
 Cómo responder:
 - En español, cálido y directo, como un amigo que sabe mucho de libros, películas y música. Respuestas cortas para leer en el celular: 2 a 5 frases normalmente.
 - Usa siempre su nivel de atención actual para opinar. Ejemplo: si pregunta por un libro largo y denso y hoy aguanta 20 minutos, dilo con honestidad y propón cómo abordarlo (por capítulos) o una alternativa para ahora y dejarlo para más adelante.
-- Ten en cuenta su historial: lo que terminó, lo que dejó y lo que le ayudó.
+- Ten en cuenta su historial (lo que terminó, lo que dejó y lo que le ayudó) y lo que contó al empezar: sus gustos, su meta y lo que le distrae.
 - No inventes datos. Si no conoces bien una obra, dilo.
 - No uses markdown con encabezados ni listas largas; texto simple.
 
@@ -65,7 +66,9 @@ Energía hoy: ${energy ?? "no la marcó"}.
 Últimas sesiones:
 ${sessionLines}
 Su plan:
-${planLines}`;
+${planLines}
+Lo que contó al empezar:
+${profileForChat(s.profile)}`;
 }
 
 export class MissingKeyError extends Error {}

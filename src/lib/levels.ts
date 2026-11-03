@@ -76,8 +76,9 @@ function seeded(seed: string) {
   return ((h >>> 0) % 10000) / 10000;
 }
 
-export function pickCategory(sessions: Session[], date: string, shift = 0): Category {
-  const order: Category[] = ["leer", "ver", "escuchar"];
+/** Solo entre las actividades que elegiste en las preguntas iniciales, pesadas por lo que te ayudó. */
+export function pickCategory(sessions: Session[], date: string, shift = 0, allowed?: Category[]): Category {
+  const order: Category[] = allowed?.length ? allowed : ["leer", "ver", "escuchar"];
   const w = categoryWeights(sessions);
   const total = order.reduce((a, c) => a + w[c], 0);
   let r = seeded(date) * total;
@@ -86,7 +87,7 @@ export function pickCategory(sessions: Session[], date: string, shift = 0): Cate
     r -= w[order[idx]];
     if (r <= 0) break;
   }
-  return order[(Math.min(idx, 2) + shift) % order.length];
+  return order[(Math.min(idx, order.length - 1) + shift) % order.length];
 }
 
 export interface Challenge {
@@ -94,11 +95,17 @@ export interface Challenge {
   title: string;
   subtitle: string;
   minutes: number;
-  planItem?: PlanItem;
+  planItem?: { title: string; minutes: number };
 }
 
-export function buildChallenge(category: Category, minutes: number, plan: PlanItem[]): Challenge {
-  const item = plan.find((p) => p.category === category && !p.done);
+/** `suggestion` se usa si tu plan no tiene nada de esa categoría (una recomendación según tus gustos). */
+export function buildChallenge(
+  category: Category,
+  minutes: number,
+  plan: PlanItem[],
+  suggestion?: { title: string; minutes: number },
+): Challenge {
+  const item = plan.find((p) => p.category === category && !p.done) ?? suggestion;
   const sub = `Sin celular · unos ${minutes} min`;
   if (category === "leer") {
     const pages = Math.max(3, Math.round(minutes / 1.5));

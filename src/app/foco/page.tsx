@@ -14,6 +14,7 @@ import {
 } from "@tabler/icons-react";
 import { getState, setState, uid } from "@/lib/store";
 import { CATEGORY_VERB, evaluateLevel, levelInfo } from "@/lib/levels";
+import { focusTip } from "@/lib/profile";
 import type { Category } from "@/lib/types";
 
 type Phase = "listo" | "corriendo" | "terminado";
@@ -62,6 +63,8 @@ function Focus() {
   const [completed, setCompleted] = useState(false);
   const [leveledUp, setLeveledUp] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
+  const [tip, setTip] = useState<string>();
+  useEffect(() => setTip(focusTip(getState().profile)), []);
 
   const total = planned * 60_000;
 
@@ -198,6 +201,7 @@ function Focus() {
                 </button>
               </div>
               <p className="mt-8 max-w-xs text-[14px] leading-6 text-zen-soft">{TIPS[category]}</p>
+              {tip && <p className="mt-3 max-w-xs text-[14px] leading-6 text-zen-ink">{tip}</p>}
             </div>
             <button
               onClick={start}

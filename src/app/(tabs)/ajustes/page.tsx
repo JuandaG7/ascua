@@ -71,7 +71,7 @@ export default function Ajustes() {
 
   const resetAll = () => {
     if (!window.confirm("¿Reiniciar todo? Se borran sesiones, plan, chat y nivel. Las grabaciones de voz no se tocan.")) return;
-    setState((s) => ({ version: 1, checkIns: [], sessions: [], plan: [], chat: [], level: 1, name: s.name }));
+    setState((s) => ({ version: 1, checkIns: [], sessions: [], plan: [], chat: [], level: 1, name: s.name, profile: s.profile }));
   };
 
   const sessions = [...state.sessions].reverse();
@@ -93,6 +93,12 @@ export default function Ajustes() {
           placeholder="¿Cómo te llamas?"
           autoComplete="given-name"
         />
+      </Section>
+
+      <Section title="Tus respuestas" sub="Lo que contaste al empezar: tus gustos, tu meta y lo que te distrae. Si algo cambió, actualízalo.">
+        <Link href="/bienvenida" className={secondary}>
+          Volver a responder las preguntas
+        </Link>
       </Section>
 
       <Section

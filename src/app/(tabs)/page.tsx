@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { IconArrowsShuffle, IconCheck, IconPlayerPlay, IconSettings, IconWind } from "@tabler/icons-react";
-import { setState, today, useAppState } from "@/lib/store";
+import { getState, setState, today, useAppState } from "@/lib/store";
+import { recommendedFor } from "@/lib/catalog";
+import { goalLabel } from "@/lib/profile";
 import {
   CATEGORY_LABEL,
   buildChallenge,
@@ -35,14 +38,22 @@ function focusHref(c: { category: string; minutes: number; title: string }) {
 
 export default function Home() {
   const state = useAppState();
+  const router = useRouter();
   const [shift, setShift] = useState(0);
+
+  // La primera vez, las preguntas iniciales. getState() lee lo guardado, no el estado de hidratación.
+  useEffect(() => {
+    if (!getState().profile) router.replace("/bienvenida");
+  }, [router]);
   const date = today();
   const checkIn = state.checkIns.find((c) => c.date === date);
   const energy = checkIn?.energy;
 
-  const category = pickCategory(state.sessions, date, shift);
+  const category = pickCategory(state.sessions, date, shift, state.profile?.wants);
   const minutes = targetMinutes(state.level, energy);
-  const challenge = buildChallenge(category, minutes, state.plan);
+  const suggestion = recommendedFor(state.level, state.profile).find((c) => c.category === category);
+  const challenge = buildChallenge(category, minutes, state.plan, suggestion);
+  const goal = goalLabel(state.profile);
   const lvl = levelInfo(state.level);
   const { good, needed } = progressToNextLevel(state);
   const last = lastSessionMinutes(state.sessions);
@@ -70,9 +81,10 @@ export default function Home() {
           <IconSettings size={22} stroke={1.6} />
         </Link>
       </div>
-      <h1 className="mb-5 font-serif text-[28px] leading-9 tracking-[-0.01em]">
+      <h1 className={`font-serif text-[28px] leading-9 tracking-[-0.01em] ${goal ? "mb-1" : "mb-5"}`}>
         ¿Cómo llegas hoy{state.name?.trim() ? `, ${state.name.trim()}` : ""}?
       </h1>
+      {goal && <p className="mb-5 text-[13px] text-ink-soft">Tu meta: {goal.toLowerCase()}</p>}
 
       <section className="mb-3 rounded-[28px] bg-surface-warm p-3" aria-label="Tu energía hoy">
         <div className="flex gap-2" role="radiogroup">

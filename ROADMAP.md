@@ -18,6 +18,8 @@ Sin esto la app funciona, pero no está lista para el día a día.
 
 Aquí la app pasa de "lista fija" a "recomendaciones para ti".
 
+- [x] **Preguntas iniciales:** cuánto aguantas hoy (nivel de partida), qué quieres recuperar, tus gustos, cuándo tienes tiempo, qué te distrae y tu meta. Ordenan las recomendaciones, eligen el reto diario, dan consejos en el modo foco y le dan contexto al chat.
+
 - [ ] **Recomendaciones de la Biblioteca generadas por IA** según tus gustos, tu nivel y lo que te ayudó, no solo las 23 fijas.
 - [ ] **Marcar obras:** "ya lo vi", "no me interesa", "lo terminé". El chat y la biblioteca lo tienen en cuenta.
 - [ ] **Progreso por libro:** páginas totales, por dónde vas y un logro al terminarlo.

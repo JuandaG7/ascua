@@ -4,19 +4,20 @@ import Link from "next/link";
 import { useState } from "react";
 import { IconCheck, IconMessageCircle, IconPlayerPlay, IconPlus, IconX } from "@tabler/icons-react";
 import { setState, useAppState } from "@/lib/store";
-import { recommendedFor } from "@/lib/catalog";
+import { matchReason, recommendedFor } from "@/lib/catalog";
 import { addToPlan } from "@/lib/plan";
 import { CATEGORY_LABEL, levelInfo } from "@/lib/levels";
 import type { Category } from "@/lib/types";
 import { CAT_STYLE, CategoryIcon, PageTitle } from "@/components/ui";
 
-const FILTERS: (Category | "todo")[] = ["todo", "leer", "ver", "escuchar"];
+
 
 export default function Biblioteca() {
   const state = useAppState();
   const [filter, setFilter] = useState<Category | "todo">("todo");
   const lvl = levelInfo(state.level);
-  const items = recommendedFor(state.level).filter((i) => filter === "todo" || i.category === filter);
+  const FILTERS: (Category | "todo")[] = ["todo", ...(state.profile?.wants.length ? state.profile.wants : (["leer", "ver", "escuchar"] as Category[]))];
+  const items = recommendedFor(state.level, state.profile).filter((i) => filter === "todo" || i.category === filter);
   const plan = state.plan.filter((p) => !p.done && (filter === "todo" || p.category === filter));
   const inPlan = (title: string) => state.plan.some((p) => p.title === title && !p.done);
 
@@ -87,6 +88,9 @@ export default function Biblioteca() {
               <p className="mt-1 font-serif text-[19px] leading-6 font-medium">{i.title}</p>
               <p className="text-[12px] opacity-90">{i.by}</p>
               <p className="mt-2 text-[13px] leading-5 opacity-90">{i.why}</p>
+              {matchReason(i, state.profile) && (
+                <p className="mt-2 text-[12px] font-medium">{matchReason(i, state.profile)}</p>
+              )}
               <button
                 onClick={() => addToPlan(i)}
                 disabled={added}
