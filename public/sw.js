@@ -1,6 +1,6 @@
 // Permite abrir la app sin internet. Busca primero la versión nueva en la red
 // (así los cambios subidos a GitHub llegan solos) y si no hay red usa la copia guardada.
-const CACHE = "ascua-v1";
+const CACHE = "ascua-v2";
 const BASE = new URL(self.registration.scope).pathname;
 
 self.addEventListener("install", (e) => {
@@ -25,8 +25,12 @@ self.addEventListener("fetch", (e) => {
   // Solo archivos de la app. El chat va a api.anthropic.com y no se toca.
   if (req.method !== "GET" || new URL(req.url).origin !== self.location.origin) return;
 
+  // Las páginas se revisan siempre contra GitHub (GitHub Pages pide guardarlas 10 min y
+  // eso dejaba ver la versión vieja). Los archivos de _next tienen nombre único por versión.
+  const fresh = req.mode === "navigate" ? fetch(req, { cache: "no-cache" }) : fetch(req);
+
   e.respondWith(
-    Promise.race([fetch(req), timeout(4000)])
+    Promise.race([fresh, timeout(4000)])
       .then((res) => {
         if (res.ok) {
           const copy = res.clone();
